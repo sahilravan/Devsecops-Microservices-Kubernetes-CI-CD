@@ -6,7 +6,7 @@ COPY package*.json ./
 
 RUN npm install --production
 
-COPY . .
+COPY --chown=node:node . .
 
 EXPOSE 3000
 

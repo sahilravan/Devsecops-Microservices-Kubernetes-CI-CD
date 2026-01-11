@@ -16,6 +16,9 @@ jobs:
   security-scan:
     name: Security Scanning
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -45,6 +48,8 @@ jobs:
   dependency-check:
     name: Dependency Security Check
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     strategy:
       matrix:
         service: [frontend, backend]
@@ -73,6 +78,9 @@ jobs:
   sast-scan:
     name: SAST Scanning
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -88,6 +96,8 @@ jobs:
   build-and-test:
     name: Build and Test
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     needs: [security-scan, dependency-check]
     strategy:
       matrix:
@@ -136,6 +146,10 @@ jobs:
   build-docker-images:
     name: Build and Scan Docker Images
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      security-events: write
     needs: [build-and-test, sast-scan]
     strategy:
       matrix:
@@ -201,6 +215,8 @@ jobs:
   deploy:
     name: Deploy to Kubernetes
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     needs: build-docker-images
     if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
     steps:
@@ -221,6 +237,8 @@ jobs:
   security-report:
     name: Generate Security Report
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     needs: [security-scan, dependency-check, sast-scan, build-docker-images]
     if: always()
     steps:

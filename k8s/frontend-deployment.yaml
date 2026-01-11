@@ -17,10 +17,13 @@ spec:
     spec:
       containers:
       - name: frontend
-        image: frontend:latest
+        image: frontend:1.0.0
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 3000
+        envFrom:
+        - configMapRef:
+            name: app-config
         env:
         - name: BACKEND_URL
           value: "http://backend-service:5000"
