@@ -1,15 +1,30 @@
-FROM node:18-alpine
+FROM nginx:1.25-alpine
 
-WORKDIR /app
+# Copy nginx configuration
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-COPY package*.json ./
+# Copy frontend files
+COPY index.html /usr/share/nginx/html/
 
-RUN npm install --production
+# Create non-root user
+RUN addgroup -g 1001 -S nginx && \
+    adduser -S nginx -u 1001 || true
 
-COPY --chown=node:node . .
+# Set proper permissions
+RUN chown -R nginx:nginx /usr/share/nginx/html && \
+    chown -R nginx:nginx /var/cache/nginx && \
+    chown -R nginx:nginx /var/log/nginx && \
+    chown -R nginx:nginx /etc/nginx/conf.d && \
+    touch /var/run/nginx.pid && \
+    chown -R nginx:nginx /var/run/nginx.pid
 
-EXPOSE 3000
+# Switch to non-root user
+USER nginx
 
-USER node
+EXPOSE 80
 
-CMD ["npm", "start"]
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD wget --quiet --tries=1 --spider http://localhost/health || exit 1
+
+CMD ["nginx", "-g", "daemon off;"]

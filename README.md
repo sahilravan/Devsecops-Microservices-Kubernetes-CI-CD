@@ -1,294 +1,399 @@
-# DevSecOps Microservices with Kubernetes and CI/CD
+# DevSecOps Microservices with Kubernetes CI/CD
 
-![CI/CD Pipeline](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-blue)
-![Kubernetes](https://img.shields.io/badge/Kubernetes-Ready-green)
-![DevSecOps](https://img.shields.io/badge/DevSecOps-Enabled-orange)
+[![DevSecOps Pipeline](https://github.com/sahilravan/Devsecops-Microservices-Kubernetes-CI-CD/actions/workflows/devsecops-pipeline.yml/badge.svg)](https://github.com/sahilravan/Devsecops-Microservices-Kubernetes-CI-CD/actions/workflows/devsecops-pipeline.yml)
 
-A complete DevSecOps implementation demonstrating microservices architecture deployed on Kubernetes with comprehensive CI/CD pipelines and security scanning.
+## 📌 Project Description
+
+This project is a **production-style DevSecOps implementation** that demonstrates how a containerized microservices application (frontend and backend) can be securely built, tested, deployed, and monitored using modern DevOps practices.
+
+The application consists of:
+- **Frontend**: Simple HTML/JavaScript interface served by Nginx
+- **Backend**: Node.js/Express REST API with Prometheus metrics
+- **Infrastructure**: Kubernetes deployments with security best practices
+- **Monitoring**: Prometheus for metrics collection and Grafana for visualization
+- **CI/CD**: Automated pipeline with integrated security scanning
+
+## 🎯 Project Objective
+
+The primary objective is to simulate a **real-world DevOps and DevSecOps workflow** as used in production environments, demonstrating:
+
+- ✅ **End-to-end CI/CD pipelines** with GitHub Actions
+- ✅ **Containerized microservices** with Docker
+- ✅ **Kubernetes deployments** with proper resource management
+- ✅ **Security integration (DevSecOps)** throughout the pipeline
+- ✅ **Automated security scanning** (SAST, dependency checks, container scanning)
+- ✅ **Application monitoring** with Prometheus and Grafana
+- ✅ **Production-ready practices** (health checks, resource limits, non-root users)
+
+This project focuses on **automation, security, reliability, and real-world DevOps workflows** rather than application complexity.
 
 ## 🏗️ Architecture
 
-This project demonstrates a microservices architecture with:
-- **Frontend Service**: Node.js/Express serving a web application
-- **Backend Service**: Python/Flask API providing data endpoints
-- **Kubernetes**: Container orchestration and deployment
-- **CI/CD Pipeline**: Automated build, test, security scanning, and deployment
-- **DevSecOps**: Integrated security scanning at every stage
-
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                     CI/CD Pipeline                          │
-│  (GitHub Actions with Security Scanning)                    │
+│                     GitHub Actions CI/CD                     │
+│  (Lint → Test → Security Scan → Build → Deploy → Monitor)   │
 └─────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
+                            ↓
 ┌─────────────────────────────────────────────────────────────┐
 │                    Kubernetes Cluster                        │
-│  ┌────────────────┐              ┌────────────────┐         │
-│  │  Frontend      │◄────────────►│   Backend      │         │
-│  │  Service       │              │   Service      │         │
-│  │  (Node.js)     │              │   (Python)     │         │
-│  │  Port: 3000    │              │   Port: 5000   │         │
-│  └────────────────┘              └────────────────┘         │
-│         │                                                    │
-│         └──────────────► Ingress Controller                 │
+│                                                              │
+│  ┌──────────────┐         ┌──────────────┐                 │
+│  │   Frontend   │ ←────→  │   Backend    │                 │
+│  │   (Nginx)    │         │  (Node.js)   │                 │
+│  │   Port: 80   │         │  Port: 3000  │                 │
+│  └──────────────┘         └──────────────┘                 │
+│         ↓                        ↓                           │
+│  ┌──────────────────────────────────────┐                  │
+│  │      Monitoring Stack                │                  │
+│  │  ┌──────────┐    ┌───────────┐      │                  │
+│  │  │Prometheus│ ←→ │  Grafana  │      │                  │
+│  │  │Port: 9090│    │Port: 3000 │      │                  │
+│  │  └──────────┘    └───────────┘      │                  │
+│  └──────────────────────────────────────┘                  │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-## 🚀 Features
+## 🔒 DevSecOps Pipeline
 
-### Microservices
-- **Frontend**: Interactive web interface with health checks
-- **Backend**: RESTful API with JSON responses
-- Containerized with Docker
-- Production-ready configurations
+The CI/CD pipeline integrates security at every stage:
 
-### Kubernetes Resources
-- Namespace isolation
-- Deployments with replica sets
-- Services for internal communication
-- ConfigMaps for configuration management
-- Ingress for external access
-- Health probes (liveness and readiness)
-- Resource limits and requests
+### 1. **Code Quality & Linting**
+- ESLint for JavaScript code quality
+- Automated testing
 
-### DevSecOps Security
-- **SAST**: Static Application Security Testing with CodeQL
-- **Dependency Scanning**: Vulnerability checks with Snyk
-- **IaC Scanning**: Kubernetes manifests security with Checkov
-- **Container Scanning**: Docker image vulnerabilities with Trivy
-- **SARIF Integration**: Security results uploaded to GitHub Security
+### 2. **Dependency Vulnerability Scanning**
+- `npm audit` for Node.js dependencies
+- OWASP Dependency Check for comprehensive analysis
 
-### CI/CD Pipeline
-- Automated testing on every push and PR
-- Multi-stage security scanning
-- Docker image building and publishing
-- Kubernetes deployment automation
-- Security report generation
+### 3. **SAST (Static Application Security Testing)**
+- GitHub CodeQL for static code analysis
+- Identifies security vulnerabilities in source code
 
-## 📋 Prerequisites
+### 4. **Container Image Scanning**
+- Trivy for container vulnerability scanning
+- Scans for OS vulnerabilities and misconfigurations
 
-- Docker and Docker Compose
-- Kubernetes cluster (minikube, kind, or cloud provider)
-- kubectl CLI tool
-- Node.js 18+ (for local development)
-- Python 3.11+ (for local development)
+### 5. **Kubernetes Manifest Validation**
+- kubectl dry-run validation
+- kubeval for manifest linting
 
-## 🛠️ Quick Start
+### 6. **Deployment & Testing**
+- Automated deployment to Kubernetes
+- Health checks and service verification
+- End-to-end testing
 
-### Local Development with Docker Compose
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/sahilravan/Devsecops-Microservices-Kubernetes-CI-CD.git
-   cd Devsecops-Microservices-Kubernetes-CI-CD
-   ```
-
-2. **Start services with Docker Compose**
-   ```bash
-   docker-compose up --build
-   ```
-
-3. **Access the application**
-   - Frontend: http://localhost:3000
-   - Backend API: http://localhost:5000/api/data
-   - Backend Health: http://localhost:5000/health
-
-### Kubernetes Deployment
-
-1. **Create namespace and resources**
-   ```bash
-   kubectl apply -f k8s/namespace.yaml
-   kubectl apply -f k8s/configmap.yaml
-   ```
-
-2. **Deploy backend service**
-   ```bash
-   kubectl apply -f k8s/backend-deployment.yaml
-   ```
-
-3. **Deploy frontend service**
-   ```bash
-   kubectl apply -f k8s/frontend-deployment.yaml
-   ```
-
-4. **Set up ingress (optional)**
-   ```bash
-   kubectl apply -f k8s/ingress.yaml
-   ```
-
-5. **Verify deployments**
-   ```bash
-   kubectl get pods -n devsecops-demo
-   kubectl get services -n devsecops-demo
-   ```
-
-6. **Access the application**
-   ```bash
-   # Using NodePort
-   kubectl get svc frontend-service -n devsecops-demo
-   # Access via http://<node-ip>:30080
-   
-   # Or port-forward for testing
-   kubectl port-forward -n devsecops-demo svc/frontend-service 3000:3000
-   ```
-
-## 🔒 Security Features
-
-### 1. Static Application Security Testing (SAST)
-- CodeQL analyzes source code for security vulnerabilities
-- Runs on every push and pull request
-- Results visible in GitHub Security tab
-
-### 2. Dependency Vulnerability Scanning
-- Snyk checks Node.js and Python dependencies
-- Identifies known vulnerabilities in packages
-- Provides remediation advice
-
-### 3. Infrastructure as Code (IaC) Security
-- Checkov scans Kubernetes manifests
-- Identifies misconfigurations and security issues
-- Ensures best practices compliance
-
-### 4. Container Image Scanning
-- Trivy scans Docker images for vulnerabilities
-- Checks base images and application dependencies
-- Generates SARIF reports for GitHub Security
-
-## 📊 CI/CD Pipeline Stages
-
-The GitHub Actions workflow includes:
-
-1. **Security Scan**: Repository-wide vulnerability scanning
-2. **Dependency Check**: NPM and pip package vulnerability checks
-3. **SAST Scan**: CodeQL static analysis
-4. **Build and Test**: Compile and test both services
-5. **Docker Build**: Create and scan container images
-6. **Deploy**: Push to Kubernetes cluster (configurable)
-7. **Security Report**: Consolidated security summary
-
-## 🧪 Testing
-
-### Frontend Tests
-```bash
-cd frontend
-npm install
-npm test
-```
-
-### Backend Tests
-```bash
-cd backend
-pip install -r requirements.txt
-python -m pytest  # Add tests as needed
-```
+### 7. **Monitoring**
+- Prometheus metrics collection
+- Grafana dashboards for visualization
 
 ## 📁 Project Structure
 
 ```
 .
+├── backend/                    # Node.js backend service
+│   ├── server.js              # Express API with Prometheus metrics
+│   ├── package.json           # Dependencies
+│   ├── Dockerfile             # Multi-stage Docker build
+│   └── .eslintrc.json         # Linting configuration
+│
+├── frontend/                   # Frontend service
+│   ├── index.html             # Single-page application
+│   ├── nginx.conf             # Nginx configuration
+│   └── Dockerfile             # Nginx-based container
+│
+├── k8s/                        # Kubernetes manifests
+│   ├── namespace.yaml         # Namespace definition
+│   ├── backend.yaml           # Backend deployment & service
+│   └── frontend.yaml          # Frontend deployment & service
+│
+├── monitoring/                 # Monitoring stack
+│   ├── prometheus/
+│   │   └── prometheus.yaml    # Prometheus deployment & config
+│   └── grafana/
+│       └── grafana.yaml       # Grafana deployment & dashboards
+│
 ├── .github/
 │   └── workflows/
-│       └── ci-cd.yaml           # CI/CD pipeline definition
-├── frontend/
-│   ├── server.js                # Frontend application
-│   ├── package.json             # Node.js dependencies
-│   ├── Dockerfile               # Frontend container image
-│   └── .dockerignore
-├── backend/
-│   ├── app.py                   # Backend API
-│   ├── requirements.txt         # Python dependencies
-│   ├── Dockerfile               # Backend container image
-│   └── .dockerignore
-├── k8s/
-│   ├── namespace.yaml           # Kubernetes namespace
-│   ├── configmap.yaml           # Configuration data
-│   ├── frontend-deployment.yaml # Frontend deployment & service
-│   ├── backend-deployment.yaml  # Backend deployment & service
-│   └── ingress.yaml             # Ingress configuration
-├── docker-compose.yaml          # Local development setup
+│       └── devsecops-pipeline.yml  # CI/CD pipeline
+│
 ├── .gitignore
 └── README.md
 ```
 
-## 🔧 Configuration
+## 🚀 Getting Started
 
-### Environment Variables
+### Prerequisites
 
-**Frontend**:
-- `PORT`: Server port (default: 3000)
-- `BACKEND_URL`: Backend service URL
+- Docker
+- Kubernetes (minikube, kind, or any K8s cluster)
+- kubectl
+- Node.js 18+ (for local development)
 
-**Backend**:
-- `PORT`: Server port (default: 5000)
-- `ENVIRONMENT`: Runtime environment (development/production)
+### Local Development
 
-### Kubernetes Configuration
+#### Backend Service
 
-Modify the following files for your environment:
-- `k8s/configmap.yaml`: Application configuration
-- `k8s/ingress.yaml`: Ingress host and paths
-- `k8s/*-deployment.yaml`: Replica counts, resource limits
+```bash
+cd backend
+npm install
+npm start
+# Service runs on http://localhost:3000
+```
 
-## 🤝 Contributing
+**Endpoints:**
+- `GET /health` - Health check
+- `GET /api/status` - Service status
+- `GET /api/data` - Sample data
+- `GET /metrics` - Prometheus metrics
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+#### Frontend Service
+
+```bash
+cd frontend
+# Using Python's HTTP server
+python3 -m http.server 8080
+# Or use any static file server
+```
+
+### Docker Build
+
+```bash
+# Build backend
+docker build -t backend-service:latest ./backend
+
+# Build frontend
+docker build -t frontend-service:latest ./frontend
+
+# Run backend
+docker run -p 3000:3000 backend-service:latest
+
+# Run frontend
+docker run -p 8080:80 frontend-service:latest
+```
+
+### Kubernetes Deployment
+
+```bash
+# Create namespace
+kubectl apply -f k8s/namespace.yaml
+
+# Deploy services
+kubectl apply -f k8s/backend.yaml
+kubectl apply -f k8s/frontend.yaml
+
+# Deploy monitoring
+kubectl apply -f monitoring/prometheus/prometheus.yaml
+
+# Create Grafana credentials secret (for dev/testing with default credentials)
+# In production, create this with secure credentials before deploying
+kubectl apply -f monitoring/grafana/grafana-secret.yaml
+kubectl apply -f monitoring/grafana/grafana.yaml
+
+# Check deployment status
+kubectl get all -n devsecops-demo
+
+# Get service URLs (for LoadBalancer or NodePort)
+kubectl get svc -n devsecops-demo
+```
+
+### Access Services
+
+#### Local/Port Forward:
+
+```bash
+# Backend
+kubectl port-forward -n devsecops-demo svc/backend-service 3000:3000
+
+# Frontend
+kubectl port-forward -n devsecops-demo svc/frontend-service 8080:80
+
+# Prometheus
+kubectl port-forward -n devsecops-demo svc/prometheus-service 9090:9090
+
+# Grafana
+kubectl port-forward -n devsecops-demo svc/grafana-service 3001:3000
+```
+
+Then access:
+- Frontend: http://localhost:8080
+- Backend API: http://localhost:3000
+- Prometheus: http://localhost:9090
+- Grafana: http://localhost:3001 (admin/admin)
+
+## 🧪 Testing
+
+### Manual Testing
+
+```bash
+# Backend health check
+curl http://localhost:3000/health
+
+# Backend API
+curl http://localhost:3000/api/status
+curl http://localhost:3000/api/data
+
+# Prometheus metrics
+curl http://localhost:3000/metrics
+```
+
+### Kubernetes Health Checks
+
+```bash
+# Check pod health
+kubectl get pods -n devsecops-demo
+
+# Check logs
+kubectl logs -n devsecops-demo deployment/backend
+kubectl logs -n devsecops-demo deployment/frontend
+
+# Describe resources
+kubectl describe deployment/backend -n devsecops-demo
+```
+
+## 📊 Monitoring
+
+### Prometheus
+
+Access Prometheus at http://localhost:9090 (after port-forward)
+
+**Sample Queries:**
+```promql
+# Request rate
+rate(http_request_duration_seconds_count[5m])
+
+# Average request duration
+rate(http_request_duration_seconds_sum[5m]) / rate(http_request_duration_seconds_count[5m])
+
+# CPU usage
+rate(process_cpu_seconds_total{job="backend-service"}[5m])
+```
+
+### Grafana
+
+Access Grafana at http://localhost:3001 (after port-forward)
+- **Username**: admin
+- **Password**: admin
+
+The deployment includes a pre-configured dashboard for backend metrics.
+
+## 🔐 Security Features
+
+### Application Security
+- ✅ Non-root container users
+- ⚠️ Read-only root filesystem (optional, requires additional volume mounts)
+- ✅ Dropped capabilities
+- ✅ Security headers (X-Frame-Options, X-XSS-Protection, etc.)
+- ✅ Health checks and readiness probes
+- ✅ Grafana credentials via Kubernetes secrets (production-ready)
+
+### CI/CD Security
+- ✅ Automated dependency scanning
+- ✅ Static code analysis (SAST)
+- ✅ Container image vulnerability scanning
+- ✅ Security reports in GitHub Security tab
+- ✅ Fail-safe defaults (continue-on-error for scans)
+
+### Kubernetes Security
+- ✅ Resource limits and requests
+- ✅ Security contexts
+- ✅ RBAC for service accounts
+- ✅ Network policies (can be added)
+
+## 🛠️ Technologies Used
+
+### Application Stack
+- **Backend**: Node.js, Express.js
+- **Frontend**: HTML5, JavaScript, Nginx
+- **Containerization**: Docker
+
+### DevOps Tools
+- **CI/CD**: GitHub Actions
+- **Orchestration**: Kubernetes
+- **Monitoring**: Prometheus, Grafana
+
+### Security Tools
+- **SAST**: GitHub CodeQL
+- **Dependency Scanning**: npm audit, OWASP Dependency Check
+- **Container Scanning**: Trivy
+- **Manifest Validation**: kubectl, kubeval
+
+## 📈 CI/CD Pipeline Flow
+
+```
+Code Push
+    ↓
+┌─────────────────┐
+│ Code Quality    │ → ESLint, Tests
+└─────────────────┘
+    ↓
+┌─────────────────┐
+│ Security Scans  │ → npm audit, OWASP DC, CodeQL
+└─────────────────┘
+    ↓
+┌─────────────────┐
+│ Build Images    │ → Docker build
+└─────────────────┘
+    ↓
+┌─────────────────┐
+│ Image Scanning  │ → Trivy
+└─────────────────┘
+    ↓
+┌─────────────────┐
+│ K8s Validation  │ → kubectl, kubeval
+└─────────────────┘
+    ↓
+┌─────────────────┐
+│ Deploy to K8s   │ → kind cluster (test)
+└─────────────────┘
+    ↓
+┌─────────────────┐
+│ Verify Deploy   │ → Health checks
+└─────────────────┘
+    ↓
+┌─────────────────┐
+│ Monitor         │ → Prometheus, Grafana
+└─────────────────┘
+```
+
+## 🎓 Learning Objectives Achieved
+
+This project demonstrates practical knowledge of:
+
+1. **CI/CD Pipeline Design**: Multi-stage pipeline with parallel jobs
+2. **DevSecOps Integration**: Security scanning at every stage
+3. **Container Security**: Vulnerability scanning, non-root users, minimal images
+4. **Kubernetes Deployment**: Proper resource management, health checks, RBAC
+5. **Monitoring & Observability**: Metrics collection and visualization
+6. **Production Best Practices**: Health checks, graceful shutdowns, logging
+7. **Infrastructure as Code**: Declarative Kubernetes manifests
+8. **Failure Handling**: Graceful degradation, retry logic
+
+## 🚧 Future Enhancements
+
+- [ ] Add Helm charts for easier deployment
+- [ ] Implement service mesh (Istio/Linkerd)
+- [ ] Add distributed tracing (Jaeger)
+- [ ] Implement GitOps with ArgoCD
+- [ ] Add more comprehensive tests (integration, e2e)
+- [ ] Implement canary deployments
+- [ ] Add log aggregation (ELK/Loki)
+- [ ] Add network policies
+- [ ] Implement secrets management (Vault)
+- [ ] Add backup and disaster recovery
 
 ## 📝 License
 
-This project is licensed under the MIT License.
+MIT License
 
-## 🎯 Learning Objectives
+## 🤝 Contributing
 
-This project demonstrates:
-- Building and deploying microservices
-- Container orchestration with Kubernetes
-- CI/CD pipeline implementation
-- DevSecOps integration
-- Security scanning automation
-- Infrastructure as Code
-- Cloud-native best practices
+This is a personal learning project, but suggestions and improvements are welcome via issues and pull requests.
 
-## 📚 Resources
+## 📧 Contact
 
-- [Kubernetes Documentation](https://kubernetes.io/docs/)
-- [Docker Documentation](https://docs.docker.com/)
-- [GitHub Actions](https://docs.github.com/en/actions)
-- [OWASP Security](https://owasp.org/)
-- [DevSecOps Best Practices](https://www.devsecops.org/)
-
-## 🐛 Troubleshooting
-
-### Common Issues
-
-**Issue**: Pods not starting
-```bash
-kubectl describe pod <pod-name> -n devsecops-demo
-kubectl logs <pod-name> -n devsecops-demo
-```
-
-**Issue**: Services not accessible
-```bash
-kubectl get svc -n devsecops-demo
-kubectl describe svc <service-name> -n devsecops-demo
-```
-
-**Issue**: Image pull errors
-- Ensure images are built and tagged correctly
-- Check image registry credentials
-- Verify image names in deployment files
-
-## 📞 Support
-
-For issues and questions:
-- Open an issue on GitHub
-- Check existing documentation
-- Review CI/CD pipeline logs
+For questions or discussions about this project, please open an issue on GitHub.
 
 ---
 
-**Built with ❤️ for learning DevSecOps practices**
+**Built with ❤️ to demonstrate real-world DevSecOps practices**
