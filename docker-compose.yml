@@ -61,10 +61,13 @@ services:
     ports:
       - "3001:3000"
     environment:
-      # WARNING: These are default credentials for local development only
-      # In production, use Docker secrets or external secret management
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin
+      # ⚠️ SECURITY WARNING: These are default credentials for LOCAL DEVELOPMENT ONLY!
+      # For production, use Docker secrets or environment-specific secure passwords:
+      # - Use docker-compose secrets
+      # - Or set via external .env file (not committed to repo)
+      # - Or use container orchestration secret management
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
       - GF_USERS_ALLOW_SIGN_UP=false
     volumes:
       - grafana-data:/var/lib/grafana
