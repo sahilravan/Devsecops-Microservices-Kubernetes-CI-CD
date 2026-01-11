@@ -184,6 +184,10 @@ kubectl apply -f k8s/frontend.yaml
 
 # Deploy monitoring
 kubectl apply -f monitoring/prometheus/prometheus.yaml
+
+# Create Grafana credentials secret (for dev/testing with default credentials)
+# In production, create this with secure credentials before deploying
+kubectl apply -f monitoring/grafana/grafana-secret.yaml
 kubectl apply -f monitoring/grafana/grafana.yaml
 
 # Check deployment status
@@ -277,10 +281,11 @@ The deployment includes a pre-configured dashboard for backend metrics.
 
 ### Application Security
 - ✅ Non-root container users
-- ✅ Read-only root filesystem (where applicable)
+- ⚠️ Read-only root filesystem (optional, requires additional volume mounts)
 - ✅ Dropped capabilities
 - ✅ Security headers (X-Frame-Options, X-XSS-Protection, etc.)
 - ✅ Health checks and readiness probes
+- ✅ Grafana credentials via Kubernetes secrets (production-ready)
 
 ### CI/CD Security
 - ✅ Automated dependency scanning

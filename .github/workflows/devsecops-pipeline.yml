@@ -262,6 +262,7 @@ jobs:
           kubectl apply -f k8s/backend.yaml
           kubectl apply -f k8s/frontend.yaml
           kubectl apply -f monitoring/prometheus/prometheus.yaml
+          kubectl apply -f monitoring/grafana/grafana-secret.yaml
           kubectl apply -f monitoring/grafana/grafana.yaml
 
       - name: Wait for deployments

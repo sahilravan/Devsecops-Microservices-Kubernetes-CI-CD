@@ -215,9 +215,12 @@
     </div>
 
     <script>
+        // Backend URL configuration
+        // In production, use relative path or configure via environment variable
+        // For local development, use localhost:3000
         const BACKEND_URL = window.location.hostname === 'localhost' 
             ? 'http://localhost:3000' 
-            : 'http://backend-service:3000';
+            : `http://${window.location.hostname}:3000`;
 
         async function checkStatus() {
             const statusContent = document.getElementById('statusContent');
