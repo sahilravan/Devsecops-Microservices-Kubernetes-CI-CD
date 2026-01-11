@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: devsecops-demo
+  labels:
+    name: devsecops-demo
+    environment: production

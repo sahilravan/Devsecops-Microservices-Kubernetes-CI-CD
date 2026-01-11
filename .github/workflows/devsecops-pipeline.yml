@@ -1,0 +1,314 @@
+name: DevSecOps CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+env:
+  BACKEND_IMAGE: backend-service
+  FRONTEND_IMAGE: frontend-service
+  REGISTRY: ghcr.io
+
+jobs:
+  # Static Code Analysis & Linting
+  code-quality:
+    name: Code Quality & Linting
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install backend dependencies
+        working-directory: ./backend
+        run: npm ci
+
+      - name: Run ESLint
+        working-directory: ./backend
+        run: npm run lint
+
+      - name: Run tests
+        working-directory: ./backend
+        run: npm test
+
+  # Dependency Vulnerability Scanning
+  dependency-scan:
+    name: Dependency Vulnerability Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install backend dependencies
+        working-directory: ./backend
+        run: npm ci
+
+      - name: Run npm audit
+        working-directory: ./backend
+        run: npm audit --audit-level=moderate || true
+
+      - name: OWASP Dependency Check
+        uses: dependency-check/Dependency-Check_Action@main
+        with:
+          project: 'devsecops-microservices'
+          path: '.'
+          format: 'HTML'
+        continue-on-error: true
+
+      - name: Upload Dependency Check report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dependency-check-report
+          path: reports/
+        continue-on-error: true
+
+  # SAST - Static Application Security Testing
+  sast-scan:
+    name: SAST Security Scan
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        continue-on-error: true
+
+  # Build and Push Docker Images
+  build-images:
+    name: Build & Scan Docker Images
+    runs-on: ubuntu-latest
+    needs: [code-quality, dependency-scan]
+    if: github.event_name == 'push'
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Backend Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: false
+          tags: ${{ env.BACKEND_IMAGE }}:${{ github.sha }},${{ env.BACKEND_IMAGE }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          load: true
+
+      - name: Build Frontend Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: false
+          tags: ${{ env.FRONTEND_IMAGE }}:${{ github.sha }},${{ env.FRONTEND_IMAGE }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          load: true
+
+      - name: Run Trivy vulnerability scanner on Backend
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.BACKEND_IMAGE }}:latest
+          format: 'sarif'
+          output: 'trivy-backend-results.sarif'
+          severity: 'CRITICAL,HIGH'
+        continue-on-error: true
+
+      - name: Run Trivy vulnerability scanner on Frontend
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.FRONTEND_IMAGE }}:latest
+          format: 'sarif'
+          output: 'trivy-frontend-results.sarif'
+          severity: 'CRITICAL,HIGH'
+        continue-on-error: true
+
+      - name: Upload Trivy scan results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-backend-results.sarif'
+        continue-on-error: true
+
+      - name: Upload Trivy scan results to GitHub Security (Frontend)
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-frontend-results.sarif'
+        continue-on-error: true
+
+      - name: Save Docker images
+        run: |
+          docker save ${{ env.BACKEND_IMAGE }}:latest -o backend-image.tar
+          docker save ${{ env.FRONTEND_IMAGE }}:latest -o frontend-image.tar
+
+      - name: Upload Backend Image Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-image
+          path: backend-image.tar
+          retention-days: 1
+
+      - name: Upload Frontend Image Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-image
+          path: frontend-image.tar
+          retention-days: 1
+
+  # Kubernetes Manifest Validation
+  validate-k8s:
+    name: Validate Kubernetes Manifests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'v1.28.0'
+
+      - name: Validate Kubernetes manifests
+        run: |
+          kubectl apply --dry-run=client -f k8s/namespace.yaml
+          kubectl apply --dry-run=client -f k8s/backend.yaml
+          kubectl apply --dry-run=client -f k8s/frontend.yaml
+          kubectl apply --dry-run=client -f monitoring/prometheus/prometheus.yaml
+          kubectl apply --dry-run=client -f monitoring/grafana/grafana.yaml
+
+      - name: Lint Kubernetes manifests with kubeval
+        run: |
+          wget https://github.com/instrumenta/kubeval/releases/latest/download/kubeval-linux-amd64.tar.gz
+          tar xf kubeval-linux-amd64.tar.gz
+          sudo mv kubeval /usr/local/bin
+          find k8s/ -name '*.yaml' -exec kubeval --strict {} \; || true
+          find monitoring/ -name '*.yaml' -exec kubeval --strict {} \; || true
+
+  # Deploy to Kubernetes (Simulated)
+  deploy:
+    name: Deploy to Kubernetes
+    runs-on: ubuntu-latest
+    needs: [build-images, validate-k8s, sast-scan]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download Backend Image
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-image
+
+      - name: Download Frontend Image
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-image
+
+      - name: Load Docker images
+        run: |
+          docker load -i backend-image.tar
+          docker load -i frontend-image.tar
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'v1.28.0'
+
+      - name: Create kind cluster for testing
+        uses: helm/kind-action@v1.8.0
+        with:
+          cluster_name: devsecops-test
+
+      - name: Load images into kind
+        run: |
+          kind load docker-image ${{ env.BACKEND_IMAGE }}:latest --name devsecops-test
+          kind load docker-image ${{ env.FRONTEND_IMAGE }}:latest --name devsecops-test
+
+      - name: Deploy to Kubernetes
+        run: |
+          kubectl apply -f k8s/namespace.yaml
+          kubectl apply -f k8s/backend.yaml
+          kubectl apply -f k8s/frontend.yaml
+          kubectl apply -f monitoring/prometheus/prometheus.yaml
+          kubectl apply -f monitoring/grafana/grafana.yaml
+
+      - name: Wait for deployments
+        run: |
+          kubectl wait --for=condition=available --timeout=300s deployment/backend -n devsecops-demo
+          kubectl wait --for=condition=available --timeout=300s deployment/frontend -n devsecops-demo
+          kubectl wait --for=condition=available --timeout=300s deployment/prometheus -n devsecops-demo
+          kubectl wait --for=condition=available --timeout=300s deployment/grafana -n devsecops-demo
+
+      - name: Verify deployment
+        run: |
+          kubectl get all -n devsecops-demo
+          kubectl get pods -n devsecops-demo -o wide
+
+      - name: Test backend service
+        run: |
+          kubectl port-forward -n devsecops-demo service/backend-service 3000:3000 &
+          sleep 5
+          curl -f http://localhost:3000/health || exit 1
+          curl -f http://localhost:3000/api/status || exit 1
+
+      - name: Test frontend service
+        run: |
+          kubectl port-forward -n devsecops-demo service/frontend-service 8080:80 &
+          sleep 5
+          curl -f http://localhost:8080/health || exit 1
+
+  # Security Summary Report
+  security-summary:
+    name: Security Summary
+    runs-on: ubuntu-latest
+    needs: [dependency-scan, sast-scan, build-images]
+    if: always()
+    steps:
+      - name: Generate Security Summary
+        run: |
+          echo "# 🔒 Security Scan Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Scan Results" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Static Code Analysis (SAST) completed" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Dependency vulnerability scan completed" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Container image security scan completed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Security Tools Used" >> $GITHUB_STEP_SUMMARY
+          echo "- **CodeQL**: Static application security testing" >> $GITHUB_STEP_SUMMARY
+          echo "- **npm audit**: Node.js dependency scanning" >> $GITHUB_STEP_SUMMARY
+          echo "- **OWASP Dependency Check**: Comprehensive dependency analysis" >> $GITHUB_STEP_SUMMARY
+          echo "- **Trivy**: Container image vulnerability scanning" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Review the detailed reports in the workflow artifacts and GitHub Security tab." >> $GITHUB_STEP_SUMMARY

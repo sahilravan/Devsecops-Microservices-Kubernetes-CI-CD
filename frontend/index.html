@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DevSecOps Microservices Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 800px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+            text-align: center;
+        }
+
+        .subtitle {
+            color: #666;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        .status-card {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+
+        .status-card h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .status-item:last-child {
+            border-bottom: none;
+        }
+
+        .status-label {
+            color: #666;
+            font-weight: 500;
+        }
+
+        .status-value {
+            color: #333;
+            font-weight: 600;
+        }
+
+        .status-ok {
+            color: #28a745;
+        }
+
+        .status-error {
+            color: #dc3545;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin: 10px 5px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .data-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .data-item {
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            transition: transform 0.2s;
+        }
+
+        .data-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .data-item h3 {
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .data-item p {
+            color: #666;
+        }
+
+        .loading {
+            text-align: center;
+            color: #666;
+            font-style: italic;
+        }
+
+        .error {
+            background: #fff5f5;
+            border-left: 4px solid #dc3545;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 8px;
+            color: #721c24;
+        }
+
+        .button-group {
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #999;
+            font-size: 0.9em;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .badge-success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .badge-danger {
+            background: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 DevSecOps Demo</h1>
+        <p class="subtitle">Microservices with Kubernetes, CI/CD & Monitoring</p>
+
+        <div class="status-card">
+            <h2>🔍 Service Status</h2>
+            <div id="statusContent">
+                <p class="loading">Checking services...</p>
+            </div>
+        </div>
+
+        <div class="status-card">
+            <h2>📊 Backend Data</h2>
+            <div id="dataContent">
+                <p class="loading">Loading data...</p>
+            </div>
+        </div>
+
+        <div class="button-group">
+            <button class="btn" onclick="checkStatus()">🔄 Refresh Status</button>
+            <button class="btn" onclick="loadData()">📥 Load Data</button>
+        </div>
+
+        <div class="footer">
+            <p>DevSecOps Pipeline: Build → Test → Scan → Deploy → Monitor</p>
+            <p>Technologies: Docker, Kubernetes, Prometheus, Grafana, GitHub Actions</p>
+        </div>
+    </div>
+
+    <script>
+        const BACKEND_URL = window.location.hostname === 'localhost' 
+            ? 'http://localhost:3000' 
+            : 'http://backend-service:3000';
+
+        async function checkStatus() {
+            const statusContent = document.getElementById('statusContent');
+            statusContent.innerHTML = '<p class="loading">Checking services...</p>';
+
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/status`);
+                const data = await response.json();
+
+                statusContent.innerHTML = `
+                    <div class="status-item">
+                        <span class="status-label">Backend Status:</span>
+                        <span class="status-value status-ok">✓ Running <span class="badge badge-success">Healthy</span></span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Version:</span>
+                        <span class="status-value">${data.version}</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Last Check:</span>
+                        <span class="status-value">${new Date(data.timestamp).toLocaleString()}</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Frontend:</span>
+                        <span class="status-value status-ok">✓ Running <span class="badge badge-success">Active</span></span>
+                    </div>
+                `;
+            } catch (error) {
+                statusContent.innerHTML = `
+                    <div class="error">
+                        <strong>⚠️ Error:</strong> Unable to connect to backend service. 
+                        <br><small>${error.message}</small>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Frontend:</span>
+                        <span class="status-value status-ok">✓ Running</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Backend:</span>
+                        <span class="status-value status-error">✗ Unavailable <span class="badge badge-danger">Error</span></span>
+                    </div>
+                `;
+            }
+        }
+
+        async function loadData() {
+            const dataContent = document.getElementById('dataContent');
+            dataContent.innerHTML = '<p class="loading">Loading data...</p>';
+
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/data`);
+                const result = await response.json();
+
+                if (result.data && result.data.length > 0) {
+                    const itemsHtml = result.data.map(item => `
+                        <div class="data-item">
+                            <h3>${item.name}</h3>
+                            <p>${item.description}</p>
+                        </div>
+                    `).join('');
+
+                    dataContent.innerHTML = `<div class="data-list">${itemsHtml}</div>`;
+                } else {
+                    dataContent.innerHTML = '<p>No data available</p>';
+                }
+            } catch (error) {
+                dataContent.innerHTML = `
+                    <div class="error">
+                        <strong>⚠️ Error:</strong> Failed to load data from backend.
+                        <br><small>${error.message}</small>
+                    </div>
+                `;
+            }
+        }
+
+        // Auto-load on page load
+        window.addEventListener('load', () => {
+            checkStatus();
+            loadData();
+        });
+    </script>
+</body>
+</html>
